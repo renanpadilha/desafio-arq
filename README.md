@@ -1,4 +1,4 @@
-# Desafio - Arquitetura de uma rede social de conteúdo
+# Desafio - Arquitetura de uma rede social
 
 ## Diagrama de arquitetura
 
@@ -6,15 +6,15 @@ O desenho abaixo visa contemplar como serão realizadas as comunicações entre 
 
 ![desafio-nt (3)](https://github.com/renanpadilha/desafio-arq/assets/5349447/40b602fe-4f7c-410e-8aff-62c13f28e956)
 
-As requisições dos diferentes clients, através de HTTP, passariam por um BFF (Backend For Frontend), o mobile teria um BFF próprio que buscaria dados diferentes do que de uma aplicação web. Assim, podemos ter maior performance, já que o próprio design de tela do mobile exige menos dados e carregamentos do que uma aplicação web. Esses BFFs seriam responsáveis por agregar e requisitar diferentes pontos da aplicação utilizadas em tela.
+As requisições dos diferentes clients, através de HTTP, passariam por um BFF (Backend For Frontend) que são responsáveis por agregar requisições e dados de acordo com o client. O BFF mobile pode buscar dados diferentes de uma aplicação web. Assim, podemos ter maior performance, já que o próprio design de diferentes telas podem exigir do que outra.
 
-No caso de uma publicação, as informações são enviadas para o serviço `post-service`, o qual grava as informações principais da publicação, como texto, dados do usuário e, caso hajam mídias, salva num bucket de forma assíncrona, retornando somente referências para serem armazenadas na base de dados. Logo, torna a requisição mais transparente para o usuário e, assim que pronta, a publicação ficaria disponível.
+No caso de uma operação de publicação, as informações são enviadas para o serviço `post-service`, o qual grava as informações principais da publicação, como texto, dados do usuário e, caso hajam mídias, salva num bucket de forma assíncrona, retornando somente referências para serem armazenadas na base de dados. Logo, torna a requisição mais transparente para o usuário e, assim que pronta, a publicação ficaria disponível.
 
-No caso de um comentário, a mesma coisa acontece, passando do BFF para o `comment-service` os dados da publicação + o conteúdo do comentário.
+No caso de um comentário, a mesma coisa acontece, passando do BFF para o `comment-service` os dados da publicação e o conteúdo do comentário.
 
-Essas duas transações podem ser armazenadas no Redis para manter o cache desses conteúdos. A estratégia de cache será definida conforme a necessidade do negócio, podendo ser os mais frequentes acessados, bem como os últimos publicados ou por tempo (TTL).
+Esses dois tipos de operação podem armazenar o conteúdo resultante no Redis para manter o cache dessas informações. A estratégia de cache será definida conforme a necessidade do negócio, podendo ser os mais frequentes acessados, bem como os últimos publicados, por tempo (TTL), etc.
 
-Qualquer um dos dois serviços (`post-service` ou `comment-service`), ao receber a requisição, publicaria em um tópico a informação de que um novo conteúdo/comentário foi criado, o consumidor desse tópico estaria em um outro seviço que poderia notificar de várias formas, de acordo com as configurações daquele usuário, por exemplo, selecionar somente notificação por e-mail ou por push.
+Qualquer um dos dois serviços (`post-service` ou `comment-service`), ao receber a requisição, processaria os dados e publicaria em um tópico a informação de que um novo post/comentário foi criado, o consumidor desse tópico estaria em um outro seviço especialista (`notification-service`) responsável por notificar os usuários de várias formas, de acordo com as configurações daquele usuário, por exemplo, selecionar somente notificação por e-mail ou por push.
 
 A gestão de acesso e identidade ficaria a cargo do Keycloak, o qual conteria as políticas de acesso de cada usuário.
 
@@ -42,8 +42,7 @@ Sendo assim, tendo uma massiva alteração dos dados, não necessitar de uma con
 
 O processamento de conteúdo realizaria-se da seguinte forma: 
 
-Os textos seriam armazenados na estrutura do próprio banco de dados, já mídias como imagens e vídeos seriam pré-processados com algum tipo de compressão dos arquivos e, após, enviados de maneira assíncrona para algum sistema de armazenamento de arquivos como o s3 da Amazon, mantendo no banco de dados somente as referências para esses arquivos.
-
+Os textos seriam armazenados na estrutura da Collection de Post no banco de dados, já as mídias como imagens e vídeos seriam pré-processados com algum tipo de compressor de arquivos e, após, enviados de maneira assíncrona para algum filesystem como o s3 da Amazon, mantendo no banco de dados somente as referências para esses arquivos.
 
 ### Notificações em tempo real
 
@@ -58,7 +57,7 @@ Um usuário realizou um comentário em uma publicação, ao receber a requisiç�
 
 ### SSO
 
-O SSO deve ser um sistema centralizado, como o Keycloak, que provê um sistema de gestão de identidade. Assim, seriam configurados os usuários, roles e scopes para que os diferentes serviços garantam que os usuários tenham acesso a determinados recursos dentro da aplicação, delegando para a aplicação somente a decodificação do token e realizando a autorização dos recursos conforme configuração do usuário no SSO. 
+O SSO deve ser um sistema centralizado, como o Keycloak, que provê um sistema de gestão de identidade. Assim, seriam configurados os usuários, policies, roles e scopes para que os diferentes serviços garantam que os usuários tenham acesso a determinados recursos dentro da aplicação, delegando para a aplicação somente a decodificação do token e realizando a autorização dos recursos conforme configuração do usuário no SSO. 
 
 Exemplo: 
 
@@ -68,10 +67,9 @@ Um usuário autenticado tem acesso a realizar comentários nas publicações, en
 
 Podemos preservar a integridade da segurança por meio da programação e da manutenção regular de frameworks e bibliotecas. No entanto, atualmente, podemos adotar uma abordagem mais abrangente, delegando diversas funcionalidades não essenciais de uma aplicação para ferramentas que realizam uma filtragem preliminar, evitando assim que requisições indesejadas alcancem a borda dos microsserviços.
 
-Ferramentas atuais como Gateway e um WAF podem contribuir com a segurança a ataques DDoS, tentativas de injeção de código e demais tipos de ataques. 
+Ferramentas mais atuais como um Gateway e um WAF podem contribuir com a segurança a ataques DDoS, tentativas de injeção de código e demais tipos de ataques. 
 
 Uma abordagem adicional que poderia ser adotada é a incorporação de ferramentas de análise de código estático, como SonarQube e Checkmarx. Essas ferramentas auxiliariam na identificação de falhas de segurança já revisadas por especialistas a cada alteração de código.
-
 
 ### Monitoramento e diagnóstico
 
