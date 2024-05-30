@@ -4,7 +4,8 @@
 
 O desenho abaixo visa contemplar como serão realizadas as comunicações entre diferentes serviços na rede social.
 
-![desafio-nt](https://github.com/renanpadilha/desafio-arq/assets/5349447/57c85f0d-87fa-4d43-934d-53f44b5b9792)
+![desafio-nt (2)](https://github.com/renanpadilha/desafio-arq/assets/5349447/9baa8ed9-3be5-483f-96bd-40c38d0652b1)
+
 
 As requisições dos diferentes clients, através de HTTP, passariam por um BFF (Backend For Frontend), por exemplo, o mobile teria um bff próprio busca dados diferentes do que de uma aplicação web, assim podemos ter maior performance, já que o próprio design de tela mobile exige menos dados e carregamentos do que uma aplicação web. Esses BFFs seriam responsáveis por agregar e requisitar diferentes pontos da aplicação.
 
